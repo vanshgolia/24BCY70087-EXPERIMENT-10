@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab 10.3 - Social Feed</title>
+    <link rel="stylesheet" href="../../lab.css">
+    <style>
+        .post-card {
+            background: var(--card-bg);
+            border-radius: 18px;
+            padding: 1.4rem;
+            margin-bottom: 1.8rem;
+            border: 1px solid var(--border);
+        }
+        .user-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+            margin-bottom: 0.9rem;
+        }
+        .profile-pic {
+            width: 38px;
+            height: 38px;
+            background: var(--primary);
+            border-radius: 50%;
+        }
+        .media-box {
+            width: 100%;
+            height: 240px;
+            background: #111827;
+            border-radius: 10px;
+            margin: 1rem 0;
+            display: flex;
+            align-items:center;
+            justify-content:center;
+            color: #6b7280;
+        }
+        .interaction-bar {
+            display: flex;
+            gap: 1.3rem;
+            border-top: 1px solid var(--border);
+            padding-top: 0.9rem;
+        }
+        .interaction {
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .interaction.active {
+            color: #fb7185;
+        }
+    </style>
+</head>
+<body>
+    <div class="lab-layout">
+        <aside class="sidebar">
+            <div class="header">
+                <h1>Connect <span>Hub</span></h1>
+                <p>Cloud-Based Feed</p>
+            </div>
+
+            <div class="glass-card">
+                <h3>Create Post</h3>
+                <textarea id="postInput" class="input-field" placeholder="Share something..."></textarea>
+                <button class="btn" style="width:100%" onclick="createPost()">Publish</button>
+            </div>
+
+            <div class="glass-card">
+                <h3>System Status</h3>
+                <div style="font-size:0.8rem; color:var(--success)">● ECS Cluster: Running</div>
+                <div style="font-size:0.8rem; color:var(--success)">● Database: Online</div>
+            </div>
+
+            <a href="../index.html" style="margin-top:auto; color: var(--primary); text-decoration: none; font-weight:600;">
+                ← Back
+            </a>
+        </aside>
+
+        <main class="main-content">
+            <div id="feedContainer"></div>
+        </main>
+    </div>
+
+    <script>
+        let feedData = JSON.parse(localStorage.getItem('feed_storage') || '[]');
+
+        function createPost() {
+            const input = document.getElementById('postInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            feedData.unshift({
+                id: Date.now(),
+                text,
+                likes: 0,
+                liked: false,
+                user: "Dev_User"
+            });
+
+            input.value = '';
+            store();
+            renderFeed();
+        }
+
+        function handleLike(id) {
+            feedData = feedData.map(post => {
+                if (post.id === id) {
+                    const liked = !post.liked;
+                    return {
+                        ...post,
+                        liked,
+                        likes: liked ? post.likes + 1 : post.likes - 1
+                    };
+                }
+                return post;
+            });
+
+            store();
+            renderFeed();
+        }
+
+        function store() {
+            localStorage.setItem('feed_storage', JSON.stringify(feedData));
+        }
+
+        function renderFeed() {
+            document.getElementById('feedContainer').innerHTML = feedData.map(post => `
+                <div class="post-card">
+                    <div class="user-bar">
+                        <div class="profile-pic"></div>
+                        <div>
+                            <b>${post.user}</b>
+                            <div style="font-size:0.7rem; color:var(--text-muted)">
+                                Deployed on Cloud
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>${post.text}</div>
+
+                    <div class="media-box">📷 Media Preview</div>
+
+                    <div class="interaction-bar">
+                        <div class="interaction ${post.liked ? 'active' : ''}" onclick="handleLike(${post.id})">
+                            ❤ ${post.likes}
+                        </div>
+                        <div class="interaction">💬 Reply</div>
+                        <div class="interaction">🔁 Share</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        renderFeed();
+    </script>
+</body>
+</html>
