@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab 10.2 - Blog System</title>
+    <link rel="stylesheet" href="../../lab.css">
+    <style>
+        .post-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.4rem;
+            margin-bottom: 1.8rem;
+        }
+        .post-meta {
+            font-size: 0.8rem;
+            color: var(--primary);
+            margin-bottom: 0.8rem;
+        }
+        .comments-section {
+            border-top: 1px solid var(--border);
+            margin-top: 1.4rem;
+            padding-top: 1rem;
+        }
+        .single-comment {
+            font-size: 0.85rem;
+            padding: 0.45rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="lab-layout">
+        <aside class="sidebar" id="sidePanel"></aside>
+
+        <main class="main-content">
+            <div id="postFeed"></div>
+        </main>
+    </div>
+
+    <script>
+        let currentUser = JSON.parse(localStorage.getItem('blog_current_user'));
+        let postList = JSON.parse(localStorage.getItem('blog_data') || '[]');
+
+        function renderSidebar() {
+            const panel = document.getElementById('sidePanel');
+
+            if (!currentUser) {
+                panel.innerHTML = `
+                    <div class="header">
+                        <h1>Content Hub</h1>
+                        <p>Please sign in</p>
+                    </div>
+                    <div class="glass-card">
+                        <h3>Login (Simulated)</h3>
+                        <input type="text" id="usernameInput" placeholder="Enter username" class="input-field">
+                        <button class="btn" style="width:100%" onclick="loginUser()">Sign In</button>
+                    </div>
+                `;
+            } else {
+                panel.innerHTML = `
+                    <div class="header">
+                        <h1>Author Panel</h1>
+                        <p>User: ${currentUser.name}</p>
+                    </div>
+                    <div class="glass-card">
+                        <h3>New Article</h3>
+                        <input type="text" id="titleInput" placeholder="Post title" class="input-field">
+                        <textarea id="contentInput" class="input-field" placeholder="Write something..."></textarea>
+                        <button class="btn" style="width:100%" onclick="publishPost()">Publish</button>
+                        <button class="btn" style="width:100%; margin-top:1rem; background:var(--danger)" onclick="logoutUser()">Sign Out</button>
+                    </div>
+                    <a href="../index.html" style="margin-top:auto; color: var(--primary); text-decoration: none; font-weight:600;">
+                        ← Back
+                    </a>
+                `;
+            }
+        }
+
+        function loginUser() {
+            const name = document.getElementById('usernameInput').value.trim();
+            if (!name) return;
+
+            currentUser = { name, token: "mock.jwt.token" };
+            localStorage.setItem('blog_current_user', JSON.stringify(currentUser));
+
+            renderSidebar();
+            renderFeed();
+        }
+
+        function logoutUser() {
+            currentUser = null;
+            localStorage.removeItem('blog_current_user');
+            renderSidebar();
+            renderFeed();
+        }
+
+        function publishPost() {
+            const title = document.getElementById('titleInput').value;
+            const content = document.getElementById('contentInput').value;
+
+            if (!title || !content) return;
+
+            postList.unshift({
+                id: Date.now(),
+                title,
+                content,
+                author: currentUser.name,
+                comments: []
+            });
+
+            localStorage.setItem('blog_data', JSON.stringify(postList));
+            renderFeed();
+        }
+
+        function renderFeed() {
+            const container = document.getElementById('postFeed');
+
+            container.innerHTML = postList.map(post => `
+                <div class="post-card">
+                    <div class="post-meta">
+                        ${post.author} • ${new Date(post.id).toLocaleDateString()}
+                    </div>
+                    <h2>${post.title}</h2>
+                    <p>${post.content}</p>
+
+                    <div class="comments-section">
+                        <h4 style="margin-bottom:0.8rem">
+                            Comments (${post.comments.length})
+                        </h4>
+
+                        ${post.comments.map(c => `
+                            <div class="single-comment">
+                                <b>${c.user}:</b> ${c.text}
+                            </div>
+                        `).join('')}
+
+                        ${currentUser ? `
+                            <div style="display:flex; gap:0.5rem; margin-top:0.8rem">
+                                <input type="text" class="input-field" style="margin:0"
+                                    id="comment_${post.id}" placeholder="Add comment...">
+                                <button class="btn" onclick="addComment(${post.id})">
+                                    Add
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addComment(postId) {
+            const input = document.getElementById(`comment_${postId}`);
+            const text = input.value.trim();
+            if (!text) return;
+
+            postList = postList.map(p =>
+                p.id === postId
+                    ? { ...p, comments: [...p.comments, { user: currentUser.name, text }] }
+                    : p
+            );
+
+            localStorage.setItem('blog_data', JSON.stringify(postList));
+            renderFeed();
+        }
+
+        renderSidebar();
+        renderFeed();
+    </script>
+</body>
+</html>
