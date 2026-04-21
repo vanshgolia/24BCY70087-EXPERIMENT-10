@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab 10.1 - Task Manager</title>
+    <link rel="stylesheet" href="../../lab.css">
+    <style>
+        .task-card {
+            display: flex;
+            align-items: center;
+            padding: 0.9rem;
+            background: rgba(255,255,255,0.04);
+            border-radius: 10px;
+            margin-bottom: 0.6rem;
+            transition: all 0.25s ease;
+        }
+        .task-card.done {
+            opacity: 0.55;
+            text-decoration: line-through;
+            border-left: 4px solid var(--success);
+        }
+        .task-card:not(.done) {
+            border-left: 4px solid var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="lab-layout">
+        <aside class="sidebar">
+            <div class="header">
+                <h1>Task <span>Manager</span></h1>
+                <p>CRUD Simulation</p>
+            </div>
+
+            <div class="glass-card">
+                <h3>Add Task</h3>
+                <input type="text" id="taskInput" placeholder="Enter task..." class="input-field">
+                <button class="btn" style="width:100%" onclick="createTask()">Add Task</button>
+            </div>
+
+            <a href="../index.html" style="margin-top:auto; color: var(--primary); text-decoration: none; font-weight:600;">
+                ← Back
+            </a>
+        </aside>
+
+        <main class="main-content">
+            <div class="glass-card">
+                <h2>Task List</h2>
+                <div id="taskContainer" style="margin-top:1.8rem;"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let taskList = JSON.parse(localStorage.getItem('task_store') || '[]');
+
+        function createTask() {
+            const input = document.getElementById('taskInput');
+            const value = input.value.trim();
+            if (!value) return;
+
+            taskList.unshift({
+                id: Date.now(),
+                text: value,
+                done: false
+            });
+
+            input.value = '';
+            persist();
+            displayTasks();
+        }
+
+        function toggleTask(id) {
+            taskList = taskList.map(task =>
+                task.id === id ? { ...task, done: !task.done } : task
+            );
+            persist();
+            displayTasks();
+        }
+
+        function removeTask(id) {
+            if (!confirm('Delete this task permanently?')) return;
+
+            taskList = taskList.filter(task => task.id !== id);
+            persist();
+            displayTasks();
+        }
+
+        function persist() {
+            localStorage.setItem('task_store', JSON.stringify(taskList));
+        }
+
+        function displayTasks() {
+            document.getElementById('taskContainer').innerHTML = taskList.map(task => `
+                <div class="task-card ${task.done ? 'done' : ''}">
+                    <input type="checkbox" ${task.done ? 'checked' : ''} 
+                        onchange="toggleTask(${task.id})" style="margin-right:0.8rem">
+
+                    <span style="flex:1">${task.text}</span>
+
+                    <button class="btn" 
+                        style="padding:0.3rem 0.6rem; background:var(--danger); font-size:0.7rem;"
+                        onclick="removeTask(${task.id})">
+                        Remove
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        displayTasks();
+    </script>
+</body>
+</html>
